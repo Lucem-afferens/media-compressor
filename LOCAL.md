@@ -1,6 +1,8 @@
 # Локальный запуск Media Compressor
 
-Команды для запуска на своей машине (macOS / Linux; на Windows — PowerShell или WSL).
+> **Проще всего:** [установка в один клик](README.md#установка-в-один-клик) — `curl … | bash` или `./install.sh` из репозитория.
+
+Команды для ручного запуска на своей машине (macOS / Linux; на Windows — PowerShell, WSL или Docker).
 
 ## Требования
 

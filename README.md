@@ -5,6 +5,47 @@
 ![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+[![Установить](https://img.shields.io/badge/▶_Установить-одной_командой-2563eb?style=for-the-badge&logo=terminal&logoColor=white)](#установка-в-один-клик)
+
+## Требования
+
+| Способ | Что нужно | Время первого запуска |
+|--------|-----------|------------------------|
+| **Установка в один клик** | macOS / Linux: git; Docker *или* Python 3.11+ и ffmpeg | 2–5 мин |
+| **Docker вручную** | [Docker Desktop](https://www.docker.com/products/docker-desktop/) + Docker Compose | 2–5 мин |
+| **Python вручную** | Python 3.11+, ffmpeg в `PATH`, ~500 МБ на venv | 1–3 мин |
+| **Windows** | [Docker Desktop](https://www.docker.com/products/docker-desktop/) + Git | 2–5 мин |
+
+**Общее для всех режимов:** свободный порт **8090**, место на диске под временные файлы (до 2 ГБ на файл по умолчанию).
+
+**Без ffmpeg** UI откроется, но вкладки «Видео» и «Аудио» не работают — изображения и inpaint доступны.
+
+## Установка в один клик
+
+Скопируйте команду в терминал — скрипт сам клонирует репозиторий, поставит зависимости и запустит сервис.
+
+**macOS / Linux** (если есть Docker — использует его; иначе Python + ffmpeg):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Lucem-afferens/media-compressor/main/install.sh | bash
+```
+
+**Windows** (PowerShell, нужен Docker Desktop):
+
+```powershell
+irm https://raw.githubusercontent.com/Lucem-afferens/media-compressor/main/install.ps1 | iex
+```
+
+После установки откройте **http://localhost:8090**
+
+Повторный запуск (из каталога `~/media-compressor`):
+
+```bash
+./start.sh
+```
+
+Другой каталог установки: `MEDIA_COMPRESSOR_DIR=/path/to/dir bash install.sh`
+
 ## Возможности
 
 | Режим | Описание |
@@ -18,7 +59,9 @@
 
 **API:** синхронные и асинхронные задачи (`async_mode=true`) с polling прогресса ffmpeg.
 
-## Быстрый старт
+## Быстрый старт (вручную)
+
+Если предпочитаете установку без скрипта — см. также [LOCAL.md](LOCAL.md).
 
 ### Docker (рекомендуется)
 
@@ -41,9 +84,7 @@ pip install -r requirements.txt
 uvicorn app:app --host 127.0.0.1 --port 8090
 ```
 
-Требуется **ffmpeg** в `PATH` (`brew install ffmpeg` на macOS).
-
-Подробнее: [LOCAL.md](LOCAL.md)
+Требуется **ffmpeg** в `PATH` (`brew install ffmpeg` на macOS, `sudo apt install ffmpeg` на Linux).
 
 ## Проверка
 
