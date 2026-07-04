@@ -90,8 +90,18 @@ def _tmpdir() -> Path:
     return Path(raw if raw and raw.strip() else tempfile.gettempdir())
 
 
+def _deployment_mode() -> Literal["local", "cloud"]:
+    explicit = os.environ.get("DEPLOYMENT_MODE", "").strip().lower()
+    if explicit in ("local", "cloud"):
+        return explicit  # type: ignore[return-value]
+    if os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_SERVICE_NAME"):
+        return "cloud"
+    return "local"
+
+
 def _max_upload_bytes() -> int:
-    return max(1 * 1024 * 1024, _env_int("MAX_UPLOAD_MB", 2048) * 1024 * 1024)
+    default_mb = 512 if _deployment_mode() == "cloud" else 2048
+    return max(1 * 1024 * 1024, _env_int("MAX_UPLOAD_MB", default_mb) * 1024 * 1024)
 
 
 def _ffmpeg_timeout_sec() -> int | None:
@@ -283,6 +293,7 @@ async def _write_upload_to_path(file: UploadFile, dest: Path, max_bytes: int) ->
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.deployment_mode = _deployment_mode()
     app.state.ffmpeg_path = shutil.which("ffmpeg")
     app.state.max_upload_bytes = _max_upload_bytes()
     try:
@@ -304,11 +315,14 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request) -> HTMLResponse:
+    mode = getattr(request.app.state, "deployment_mode", "local")
     return TEMPLATES.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "max_upload_human": _fmt_bytes(app.state.max_upload_bytes),
+            "deployment": mode,
+            "local_repo_url": "https://github.com/Lucem-afferens/media-compressor",
         },
     )
 
@@ -320,6 +334,7 @@ def health() -> dict[str, Any]:
     core_ok = ffmpeg_ok or pillow_ok
     return {
         "status": "ok" if core_ok else "degraded",
+        "deployment": getattr(app.state, "deployment_mode", "local"),
         "ffmpeg": ffmpeg_ok,
         "pillow": pillow_ok,
         "opencv": bool(getattr(app.state, "opencv_available", False)),
@@ -436,6 +451,7 @@ def api_settings() -> dict[str, Any]:
     max_b = getattr(app.state, "max_upload_bytes", _max_upload_bytes())
     pillow_ok = bool(getattr(app.state, "pillow_available", False))
     return {
+        "deployment": getattr(app.state, "deployment_mode", "local"),
         "max_upload_bytes": max_b,
         "max_upload_human": _fmt_bytes(max_b),
         "ffmpeg_available": bool(getattr(app.state, "ffmpeg_path", None)),

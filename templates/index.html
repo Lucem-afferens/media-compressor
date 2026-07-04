@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Сжатие видео, фото и аудио локально на вашем компьютере." />
+    <meta name="description" content="{% if deployment == 'cloud' %}Сжатие видео, фото и аудио онлайн.{% else %}Сжатие видео, фото и аудио локально на вашем компьютере.{% endif %}" />
     <meta name="theme-color" content="#0b1220" />
     <title>Media Compressor</title>
     <link rel="stylesheet" href="/static/app.css" />
@@ -16,7 +16,7 @@
         <div class="brand">
           <span class="brand__mark" aria-hidden="true"></span>
           <div>
-            <p class="brand__eyebrow">Локально · без облака</p>
+            <p class="brand__eyebrow">{% if deployment == 'cloud' %}Облако · обработка на сервере{% else %}Локально · без облака{% endif %}</p>
             <h1 class="brand__title">Media Compressor</h1>
           </div>
         </div>
@@ -24,6 +24,13 @@
     </header>
 
     <main id="main" class="wrap main" tabindex="-1">
+      {% if deployment == 'cloud' %}
+      <div class="banner banner--warn" role="status">
+        <strong>Файлы загружаются на сервер</strong> для обработки (видео, аудио, фото).
+        Для работы без отправки файлов в сеть —
+        <a href="{{ local_repo_url }}#локальная-версия">локальная установка</a>.
+      </div>
+      {% endif %}
       <div id="banner-ffmpeg" class="banner banner--warn is-hidden" role="alert">
         <strong>ffmpeg недоступен.</strong> Вкладки «Видео» и «Аудио» не работают.
       </div>
@@ -330,7 +337,11 @@
 
     <footer class="footer">
       <div class="wrap footer__inner">
-        <span>Обработка на этом компьютере</span>
+        <span>{% if deployment == 'cloud' %}Обработка на сервере{% else %}Обработка на этом компьютере{% endif %}</span>
+        {% if deployment == 'cloud' %}
+        <span class="footer__dot" aria-hidden="true">·</span>
+        <a href="{{ local_repo_url }}">Локальная версия</a>
+        {% endif %}
         <span class="footer__dot" aria-hidden="true">·</span>
         <a href="/docs">API</a>
         <span class="footer__dot" aria-hidden="true">·</span>
