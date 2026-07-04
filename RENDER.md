@@ -48,7 +48,20 @@
 curl -s https://YOUR-SERVICE.onrender.com/health | python3 -m json.tool
 ```
 
-`"deployment": "cloud"`, `"ffmpeg": true`.
+`"deployment": "cloud"`, `"ffmpeg": true`. После обновлений смотрите `"git_commit"` — должен совпадать с GitHub.
+
+## Обновление с GitHub
+
+Push в `main` деплоится автоматически только если в Render включён **Auto-Deploy** (Settings → Build & Deploy).
+
+**Если сайт показывает старый интерфейс:**
+
+1. [Render Dashboard](https://dashboard.render.com) → сервис (например `media-compressor-0w0q`)
+2. **Manual Deploy** → **Deploy latest commit**
+3. Дождитесь зелёного статуса Live (~5–10 мин)
+4. Проверка: `curl -s https://media-compressor-0w0q.onrender.com/health` → `"git_commit": "e8817b1"` (или новее)
+
+Первый деплой через кнопку «Deploy to Render» часто **не** подписывается на каждый push — нужен Manual Deploy или включить Auto-Deploy и привязать репозиторий.
 
 ## Railway
 

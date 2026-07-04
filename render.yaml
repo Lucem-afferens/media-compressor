@@ -6,6 +6,9 @@ services:
     name: media-compressor
     runtime: docker
     plan: free
+    repo: https://github.com/Lucem-afferens/media-compressor
+    branch: main
+    autoDeployTrigger: commit
     healthCheckPath: /health
     envVars:
       - key: DEPLOYMENT_MODE

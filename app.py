@@ -339,6 +339,8 @@ def health() -> dict[str, Any]:
     core_ok = ffmpeg_ok or pillow_ok
     return {
         "status": "ok" if core_ok else "degraded",
+        "version": "0.6.0",
+        "git_commit": (os.environ.get("RENDER_GIT_COMMIT") or "")[:7] or None,
         "deployment": getattr(app.state, "deployment_mode", "local"),
         "ffmpeg": ffmpeg_ok,
         "pillow": pillow_ok,
