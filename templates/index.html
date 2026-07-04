@@ -47,7 +47,7 @@
           <button type="button" class="tab" role="tab" id="tab-image" aria-controls="panel-image" aria-selected="false" tabindex="-1">Фото</button>
           <button type="button" class="tab" role="tab" id="tab-audio" aria-controls="panel-audio" aria-selected="false" tabindex="-1">Аудио</button>
         </div>
-        <p class="tabs__hint">Выберите вкладку: сжать видео, оптимизировать фото или конвертировать звук.</p>
+        <p class="tabs__hint">Видео — сжать ролик · Фото — оптимизировать · Аудио — сжать звук или <strong>извлечь из видео</strong>.</p>
       </div>
 
       <!-- VIDEO -->
@@ -278,29 +278,29 @@
       <div id="panel-audio" class="tabpanel" role="tabpanel" aria-labelledby="tab-audio" hidden>
         <section class="card card--primary">
           <aside class="panel-guide" aria-label="Справка по аудио">
-            <h2 class="panel-guide__title">Конвертация аудио</h2>
-            <p class="panel-guide__lead">Перекодировать звук или <strong>извлечь дорожку из видео</strong> (MP4, MOV и др.).</p>
+            <h2 class="panel-guide__title">Сжатие и конвертация аудио</h2>
+            <p class="panel-guide__lead">Уменьшите размер трека, смените формат или <strong>вытащите звук из видео</strong> — MP4, MOV, MKV и другие ролики поддерживаются.</p>
             <dl class="panel-guide__grid">
               <div class="panel-guide__row">
                 <dt>Вход</dt>
-                <dd>MP3, WAV, FLAC, M4A, AAC, OGG, Opus · или видеофайл</dd>
+                <dd>MP3, WAV, FLAC, M4A, OGG, Opus · <strong>или видео</strong> (извлекается первая аудиодорожка)</dd>
               </div>
               <div class="panel-guide__row">
                 <dt>Выход</dt>
-                <dd><strong>MP3</strong> — везде · <strong>M4A/AAC</strong> — Apple · <strong>Opus</strong> — голос · <strong>FLAC</strong> — без потерь</dd>
+                <dd><strong>MP3</strong> — меньше размер · <strong>M4A</strong> — Apple · <strong>Opus</strong> — голос · <strong>FLAC</strong> — без потерь</dd>
               </div>
             </dl>
             <ol class="panel-guide__steps">
-              <li>Загрузите аудио или видео</li>
-              <li>Выберите формат (или пресет «MP4 → MP3»)</li>
-              <li>«Конвертировать и скачать»</li>
+              <li>Загрузите аудио <em>или видеофайл</em></li>
+              <li>Выберите формат — пресет «Из видео → MP3» для роликов</li>
+              <li>Нажмите «Сжать и скачать» (для видео — «Извлечь звук и скачать»)</li>
             </ol>
           </aside>
-          <div id="aud-dropzone" class="dropzone dropzone--audio" role="button" tabindex="0" aria-label="Загрузить аудио или видео">
+          <div id="aud-dropzone" class="dropzone dropzone--audio" role="button" tabindex="0" aria-label="Загрузить аудио или видео для сжатия">
             <input id="aud-file" class="dropzone__input" type="file" accept="audio/*,video/*,.mp3,.m4a,.flac,.opus" aria-describedby="aud-drop-hint" />
             <div class="dropzone__body">
-              <p class="dropzone__title">Аудио или видео</p>
-              <p id="aud-drop-hint" class="dropzone__hint">Из видео извлекается звук · до {{ max_upload_human }}</p>
+              <p class="dropzone__title">Аудио или видео — сожмём или извлечём звук</p>
+              <p id="aud-drop-hint" class="dropzone__hint">MP3, WAV, FLAC… · MP4/MOV/MKV — звук извлекается автоматически · до {{ max_upload_human }}</p>
             </div>
           </div>
 
@@ -311,16 +311,17 @@
 
           <div id="aud-kpi" class="file-meta is-hidden" aria-live="polite">
             <span id="aud-kpiName" class="mono file-meta__name"></span>
+            <span id="aud-kpiKind" class="file-meta__kind is-hidden"></span>
             <span id="aud-kpiSize" class="file-meta__size"></span>
           </div>
 
           <form id="aud-form" class="form" novalidate>
             <div class="presets presets--main" role="group" aria-label="Быстрый выбор">
-              <button type="button" class="btn btn--sm btn--preset is-active" id="aud-preset-mp4mp3">MP4 → MP3</button>
-              <button type="button" class="btn btn--sm btn--preset" id="aud-preset-podcast">Подкаст</button>
-              <button type="button" class="btn btn--sm btn--preset" id="aud-preset-flac">FLAC</button>
+              <button type="button" class="btn btn--sm btn--preset is-active" id="aud-preset-mp4mp3">Из видео → MP3</button>
+              <button type="button" class="btn btn--sm btn--preset" id="aud-preset-podcast">Подкаст (Opus)</button>
+              <button type="button" class="btn btn--sm btn--preset" id="aud-preset-flac">Без потерь (FLAC)</button>
             </div>
-            <p class="preset-hint" id="aud-preset-hint">Из видео извлекается звук и сохраняется как MP3 192 kbps.</p>
+            <p class="preset-hint" id="aud-preset-hint">Для роликов MP4/MOV: извлекается звук и сжимается в MP3 192 kbps.</p>
 
             <div class="field field--simple">
               <label for="aud-output">Формат</label>
@@ -336,7 +337,7 @@
             </div>
 
             <div class="actions">
-              <button id="aud-submit" type="submit" class="btn btn--primary">Конвертировать и скачать</button>
+              <button id="aud-submit" type="submit" class="btn btn--primary">Сжать или конвертировать</button>
               <button id="aud-reset" type="button" class="btn btn--ghost">Сбросить</button>
             </div>
 

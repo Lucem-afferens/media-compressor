@@ -1152,6 +1152,20 @@ select:focus-visible {
   word-break: break-all;
 }
 
+.file-meta__kind {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-hover);
+}
+
+.file-meta__kind::before {
+  content: "·";
+  margin-right: 8px;
+  opacity: 0.5;
+  font-weight: 400;
+  color: var(--muted2);
+}
+
 .file-meta__size {
   color: var(--muted2);
   font-size: 13px;

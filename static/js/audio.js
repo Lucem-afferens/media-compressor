@@ -28,6 +28,21 @@ const AUDIO_FIELDS = {
   "aud-sample-rate": "sampleRate",
 };
 
+const VIDEO_INPUT_RE = /\.(mp4|m4v|mov|mkv|webm|avi|mpeg|mpg)$/i;
+
+function isVideoInput(file) {
+  return Boolean(file && (file.type.startsWith("video/") || VIDEO_INPUT_RE.test(file.name)));
+}
+
+function defaultSubmitLabel() {
+  return "Сжать или конвертировать";
+}
+
+function submitLabelForFile(file) {
+  if (!file) return defaultSubmitLabel();
+  return isVideoInput(file) ? "Извлечь звук и скачать" : "Сжать и скачать";
+}
+
 export function initAudio() {
   const dropzone = $("aud-dropzone");
   const fileEl = $("aud-file");
@@ -37,6 +52,7 @@ export function initAudio() {
   const resetEl = $("aud-reset");
   const kpiEl = $("aud-kpi");
   const kpiNameEl = $("aud-kpiName");
+  const kpiKindEl = $("aud-kpiKind");
   const kpiSizeEl = $("aud-kpiSize");
   const previewWrap = $("aud-preview-wrap");
   const previewAudio = $("aud-preview-audio");
@@ -119,18 +135,33 @@ export function initAudio() {
     previewWrap.classList.remove("is-hidden");
   }
 
+  function updateSubmitLabel(file) {
+    if (submitEl) submitEl.textContent = submitLabelForFile(file);
+  }
+
   function onFileChosen(file) {
     if (!file) {
       kpiEl.classList.add("is-hidden");
+      if (kpiKindEl) kpiKindEl.classList.add("is-hidden");
       hideStatus();
       clearPreview();
       if (resultEl) resultEl.classList.add("is-hidden");
+      updateSubmitLabel(null);
       return;
     }
     kpiEl.classList.remove("is-hidden");
     kpiNameEl.textContent = file.name;
     kpiSizeEl.textContent = fmtBytes(file.size);
+    if (kpiKindEl) {
+      if (isVideoInput(file)) {
+        kpiKindEl.textContent = "Видео — будет извлечён звук";
+        kpiKindEl.classList.remove("is-hidden");
+      } else {
+        kpiKindEl.classList.add("is-hidden");
+      }
+    }
     attachPreview(file);
+    updateSubmitLabel(file);
 
     if (file.size > settings.max_upload_bytes) {
       setStatus("err", `<strong>Слишком большой файл.</strong> Лимит: <span class="mono">${escapeHtml(settings.max_upload_human)}</span>.`);
@@ -159,7 +190,7 @@ export function initAudio() {
       $("aud-sample-rate").value = "0";
       $("aud-normalize").checked = false;
       markAudPreset("aud-preset-mp4mp3");
-      if (hintEl) hintEl.textContent = "Из видео извлекается звук и сохраняется как MP3 192 kbps.";
+      if (hintEl) hintEl.textContent = "Для роликов MP4/MOV: извлекается звук и сжимается в MP3 192 kbps.";
     } else if (p === "podcast") {
       outSel.value = "opus";
       $("aud-bitrate-k").value = "96";
@@ -167,14 +198,14 @@ export function initAudio() {
       $("aud-sample-rate").value = "48000";
       $("aud-normalize").checked = true;
       markAudPreset("aud-preset-podcast");
-      if (hintEl) hintEl.textContent = "Opus моно 96 kbps, нормализация — компактно для речи и подкастов.";
+      if (hintEl) hintEl.textContent = "Opus моно 96 kbps — сжатие речи и подкастов, меньше размер.";
     } else if (p === "flac") {
       outSel.value = "flac";
       $("aud-mono").checked = false;
       $("aud-sample-rate").value = "0";
       $("aud-normalize").checked = false;
       markAudPreset("aud-preset-flac");
-      if (hintEl) hintEl.textContent = "FLAC без потерь — для архива и дальнейшего монтажа.";
+      if (hintEl) hintEl.textContent = "FLAC без потерь — конвертация без сжатия, файл может быть больше.";
     }
     syncAudUi();
   }
