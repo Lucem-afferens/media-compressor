@@ -28,6 +28,17 @@ const VIDEO_FIELDS = {
   crf: "crf",
 };
 
+const VIDEO_PRESET_HINTS = {
+  balance: "Баланс качества и размера — подходит для большинства роликов.",
+  messenger: "Меньший файл и 720p — удобно для Telegram, WhatsApp и почты.",
+  max: "Максимальное сжатие (H.265, 1080p) — дольше кодируется, файл легче.",
+};
+
+function updateVideoPresetHint(p) {
+  const el = $("video-preset-hint");
+  if (el) el.textContent = VIDEO_PRESET_HINTS[p] || "";
+}
+
 function applyVideoPreset(p) {
   const crfValEl = $("crfVal");
   if (p === "messenger") {
@@ -55,6 +66,7 @@ function applyVideoPreset(p) {
   document.querySelectorAll("[data-video-preset]").forEach((btn) => {
     btn.classList.toggle("is-active", btn.dataset.videoPreset === p);
   });
+  updateVideoPresetHint(p);
 }
 
 export function initVideo() {

@@ -165,6 +165,13 @@ body {
   margin-bottom: 18px;
 }
 
+.tabs__hint {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted2);
+  line-height: 1.45;
+}
+
 .tablist {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1192,6 +1199,81 @@ select:focus-visible {
 .advanced__body {
   padding: 0 14px 14px;
   border-top: 1px solid var(--panel-border);
+}
+
+/* Panel guides — what / how / formats */
+.panel-guide {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--panel-border);
+  background: rgba(59, 130, 246, 0.06);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.panel-guide__title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.panel-guide__lead {
+  margin: 0 0 10px;
+}
+
+.panel-guide__grid {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.panel-guide__row {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.panel-guide__row dt {
+  margin: 0;
+  font-weight: 600;
+  color: var(--muted2);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.panel-guide__row dd {
+  margin: 0;
+  color: var(--text);
+}
+
+.panel-guide__steps {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: var(--text);
+}
+
+.panel-guide__steps li + li {
+  margin-top: 4px;
+}
+
+.panel-guide__note {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--panel-border);
+  font-size: 12px;
+  color: var(--muted2);
+}
+
+.preset-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted2);
+  min-height: 1.4em;
 }
 
 .row2 {

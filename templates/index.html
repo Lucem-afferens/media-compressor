@@ -47,11 +47,31 @@
           <button type="button" class="tab" role="tab" id="tab-image" aria-controls="panel-image" aria-selected="false" tabindex="-1">Фото</button>
           <button type="button" class="tab" role="tab" id="tab-audio" aria-controls="panel-audio" aria-selected="false" tabindex="-1">Аудио</button>
         </div>
+        <p class="tabs__hint">Выберите вкладку: сжать видео, оптимизировать фото или конвертировать звук.</p>
       </div>
 
       <!-- VIDEO -->
       <div id="panel-video" class="tabpanel" role="tabpanel" aria-labelledby="tab-video">
         <section class="card card--primary">
+          <aside class="panel-guide" aria-label="Справка по видео">
+            <h2 class="panel-guide__title">Сжатие видео</h2>
+            <p class="panel-guide__lead">Уменьшите размер ролика — на выходе всегда <strong>MP4</strong> с перекодированным видео и звуком.</p>
+            <dl class="panel-guide__grid">
+              <div class="panel-guide__row">
+                <dt>Вход</dt>
+                <dd>MP4, MOV, MKV, WebM, AVI, M4V, MPEG</dd>
+              </div>
+              <div class="panel-guide__row">
+                <dt>Выход</dt>
+                <dd>MP4 · кодек H.264 (совместимость) или H.265 (меньше размер)</dd>
+              </div>
+            </dl>
+            <ol class="panel-guide__steps">
+              <li>Перетащите файл или нажмите на область загрузки</li>
+              <li>Выберите пресет или откройте «Тонкие настройки»</li>
+              <li>Нажмите «Сжать и скачать» — дождитесь прогресса</li>
+            </ol>
+          </aside>
           <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Загрузить видео">
             <input id="file" class="dropzone__input" type="file" accept="video/*" aria-describedby="drop-hint" />
             <div class="dropzone__body">
@@ -75,6 +95,7 @@
               <button type="button" class="btn btn--sm btn--preset" data-video-preset="messenger">Для чата</button>
               <button type="button" class="btn btn--sm btn--preset" data-video-preset="max">Меньше размер</button>
             </div>
+            <p class="preset-hint" id="video-preset-hint">Баланс качества и размера — подходит для большинства роликов.</p>
 
             <div class="progress-wrap">
               <div class="progress is-hidden" id="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -92,6 +113,7 @@
             <details class="advanced">
               <summary>Тонкие настройки (ffmpeg)</summary>
               <div class="advanced__body">
+                <p class="field-hint">CRF: меньше число — лучше качество, больше файл (обычно 18–28). H.265 даёт меньший размер, но кодируется дольше. Preset «slow» — ещё меньше файл при том же CRF.</p>
                 <div class="row2">
                   <div class="field">
                     <label for="codec">Кодек</label>
@@ -129,6 +151,26 @@
       <!-- IMAGE -->
       <div id="panel-image" class="tabpanel" role="tabpanel" aria-labelledby="tab-image" hidden>
         <section class="card card--primary">
+          <aside class="panel-guide" aria-label="Справка по фото">
+            <h2 class="panel-guide__title">Оптимизация изображений</h2>
+            <p class="panel-guide__lead">Сжать фото без видимой потери или конвертировать в другой формат. Несколько файлов — один ZIP.</p>
+            <dl class="panel-guide__grid">
+              <div class="panel-guide__row">
+                <dt>Вход</dt>
+                <dd>JPEG, PNG, WebP, GIF, BMP, TIFF</dd>
+              </div>
+              <div class="panel-guide__row">
+                <dt>Выход</dt>
+                <dd>JPEG, PNG или WebP · «Авто» сохраняет формат (или WebP для редких типов)</dd>
+              </div>
+            </dl>
+            <ol class="panel-guide__steps">
+              <li>Выберите одно или несколько фото</li>
+              <li>При необходимости укажите формат и качество в «Тонких настройках»</li>
+              <li>Один файл — скачается сразу; несколько — архив ZIP</li>
+            </ol>
+            <p class="panel-guide__note">Inpaint: закрасьте объект белым кистью — фон заполнится автоматически (в разделе ниже).</p>
+          </aside>
           <div id="img-dropzone" class="dropzone dropzone--image" role="button" tabindex="0" aria-label="Загрузить изображения">
             <input id="img-file" class="dropzone__input" type="file" multiple accept="image/*,.jfif" aria-describedby="img-drop-hint" />
             <div class="dropzone__body">
@@ -165,6 +207,7 @@
             <details class="advanced">
               <summary>Тонкие настройки (формат и качество)</summary>
               <div class="advanced__body">
+                <p class="field-hint">Качество 85 — хороший баланс. PNG «Умный» уменьшает размер без сильных артефактов. Макс. сторона — уменьшить большие фото перед отправкой.</p>
                 <div class="row2">
                   <div class="field">
                     <label for="img-output">Формат</label>
@@ -234,6 +277,25 @@
       <!-- AUDIO -->
       <div id="panel-audio" class="tabpanel" role="tabpanel" aria-labelledby="tab-audio" hidden>
         <section class="card card--primary">
+          <aside class="panel-guide" aria-label="Справка по аудио">
+            <h2 class="panel-guide__title">Конвертация аудио</h2>
+            <p class="panel-guide__lead">Перекодировать звук или <strong>извлечь дорожку из видео</strong> (MP4, MOV и др.).</p>
+            <dl class="panel-guide__grid">
+              <div class="panel-guide__row">
+                <dt>Вход</dt>
+                <dd>MP3, WAV, FLAC, M4A, AAC, OGG, Opus · или видеофайл</dd>
+              </div>
+              <div class="panel-guide__row">
+                <dt>Выход</dt>
+                <dd><strong>MP3</strong> — везде · <strong>M4A/AAC</strong> — Apple · <strong>Opus</strong> — голос · <strong>FLAC</strong> — без потерь</dd>
+              </div>
+            </dl>
+            <ol class="panel-guide__steps">
+              <li>Загрузите аудио или видео</li>
+              <li>Выберите формат (или пресет «MP4 → MP3»)</li>
+              <li>«Конвертировать и скачать»</li>
+            </ol>
+          </aside>
           <div id="aud-dropzone" class="dropzone dropzone--audio" role="button" tabindex="0" aria-label="Загрузить аудио или видео">
             <input id="aud-file" class="dropzone__input" type="file" accept="audio/*,video/*,.mp3,.m4a,.flac,.opus" aria-describedby="aud-drop-hint" />
             <div class="dropzone__body">
@@ -258,6 +320,7 @@
               <button type="button" class="btn btn--sm btn--preset" id="aud-preset-podcast">Подкаст</button>
               <button type="button" class="btn btn--sm btn--preset" id="aud-preset-flac">FLAC</button>
             </div>
+            <p class="preset-hint" id="aud-preset-hint">Из видео извлекается звук и сохраняется как MP3 192 kbps.</p>
 
             <div class="field field--simple">
               <label for="aud-output">Формат</label>
@@ -280,6 +343,7 @@
             <details class="advanced">
               <summary>Тонкие настройки (битрейт, частота)</summary>
               <div class="advanced__body">
+                <p class="field-hint">MP3 192 kbps — универсально. Opus — лучше для голоса при меньшем размере. FLAC — без потерь, файл крупнее. VBR для MP3 подбирает битрейт по сложности звука.</p>
                 <div class="row2">
                   <div class="field" id="aud-bitrate-mode-wrap">
                     <label for="aud-bitrate-mode">Режим MP3</label>

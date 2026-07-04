@@ -36,6 +36,25 @@
 
       <div id="panel-image" class="tabpanel" role="region" aria-label="Изображения">
         <section class="card card--primary">
+          <aside class="panel-guide" aria-label="Справка по фото">
+            <h2 class="panel-guide__title">Оптимизация изображений</h2>
+            <p class="panel-guide__lead">Сжать фото или конвертировать формат. Несколько файлов — один ZIP.</p>
+            <dl class="panel-guide__grid">
+              <div class="panel-guide__row">
+                <dt>Вход</dt>
+                <dd>JPEG, PNG, WebP, GIF, BMP, TIFF</dd>
+              </div>
+              <div class="panel-guide__row">
+                <dt>Выход</dt>
+                <dd>JPEG, PNG или WebP · «Авто» сохраняет исходный формат</dd>
+              </div>
+            </dl>
+            <ol class="panel-guide__steps">
+              <li>Выберите одно или несколько фото</li>
+              <li>При необходимости — формат и качество в «Тонких настройках»</li>
+              <li>«Оптимизировать и скачать»</li>
+            </ol>
+          </aside>
           <div id="img-dropzone" class="dropzone dropzone--image" role="button" tabindex="0" aria-label="Загрузить изображения">
             <input id="img-file" class="dropzone__input" type="file" multiple accept="image/*,.jfif" aria-describedby="img-drop-hint" />
             <div class="dropzone__body">

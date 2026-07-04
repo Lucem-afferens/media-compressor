@@ -150,6 +150,7 @@ export function initAudio() {
   });
 
   function applyPreset(p) {
+    const hintEl = $("aud-preset-hint");
     if (p === "mp4mp3") {
       outSel.value = "mp3";
       $("aud-bitrate-mode").value = "cbr";
@@ -158,6 +159,7 @@ export function initAudio() {
       $("aud-sample-rate").value = "0";
       $("aud-normalize").checked = false;
       markAudPreset("aud-preset-mp4mp3");
+      if (hintEl) hintEl.textContent = "Из видео извлекается звук и сохраняется как MP3 192 kbps.";
     } else if (p === "podcast") {
       outSel.value = "opus";
       $("aud-bitrate-k").value = "96";
@@ -165,12 +167,14 @@ export function initAudio() {
       $("aud-sample-rate").value = "48000";
       $("aud-normalize").checked = true;
       markAudPreset("aud-preset-podcast");
+      if (hintEl) hintEl.textContent = "Opus моно 96 kbps, нормализация — компактно для речи и подкастов.";
     } else if (p === "flac") {
       outSel.value = "flac";
       $("aud-mono").checked = false;
       $("aud-sample-rate").value = "0";
       $("aud-normalize").checked = false;
       markAudPreset("aud-preset-flac");
+      if (hintEl) hintEl.textContent = "FLAC без потерь — для архива и дальнейшего монтажа.";
     }
     syncAudUi();
   }
