@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Сжатие видео, фото и аудио локально на вашем компьютере." />
+    <meta name="theme-color" content="#0b1220" />
+    <title>Media Compressor</title>
+    <link rel="stylesheet" href="/static/app.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">К основному содержимому</a>
+
+    <header class="site-header">
+      <div class="wrap site-header__inner">
+        <div class="brand">
+          <span class="brand__mark" aria-hidden="true"></span>
+          <div>
+            <p class="brand__eyebrow">Локально · без облака</p>
+            <h1 class="brand__title">Media Compressor</h1>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="wrap main" tabindex="-1">
+      <div id="banner-ffmpeg" class="banner banner--warn is-hidden" role="alert">
+        <strong>ffmpeg недоступен.</strong> Вкладки «Видео» и «Аудио» не работают.
+      </div>
+      <div id="banner-pillow" class="banner banner--warn is-hidden" role="alert">
+        <strong>Pillow недоступен.</strong> Вкладка «Изображения» отключена.
+      </div>
+      <div id="banner-img-tools" class="banner banner--warn is-hidden" role="status">
+        <strong>Заплатка по маске недоступна.</strong> Нужен OpenCV на сервере.
+      </div>
+
+      <div class="tabs" role="presentation">
+        <div class="tablist" role="tablist" aria-label="Режим">
+          <button type="button" class="tab" role="tab" id="tab-video" aria-controls="panel-video" aria-selected="true" tabindex="0">Видео</button>
+          <button type="button" class="tab" role="tab" id="tab-image" aria-controls="panel-image" aria-selected="false" tabindex="-1">Фото</button>
+          <button type="button" class="tab" role="tab" id="tab-audio" aria-controls="panel-audio" aria-selected="false" tabindex="-1">Аудио</button>
+        </div>
+      </div>
+
+      <!-- VIDEO -->
+      <div id="panel-video" class="tabpanel" role="tabpanel" aria-labelledby="tab-video">
+        <section class="card card--primary">
+          <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Загрузить видео">
+            <input id="file" class="dropzone__input" type="file" accept="video/*" aria-describedby="drop-hint" />
+            <div class="dropzone__body">
+              <p class="dropzone__title">Перетащите видео или выберите файл</p>
+              <p id="drop-hint" class="dropzone__hint">MP4, MOV, MKV · до {{ max_upload_human }}</p>
+            </div>
+          </div>
+
+          <div id="preview-wrap" class="preview-wrap is-hidden">
+            <video id="preview" class="preview" controls playsinline preload="metadata"></video>
+          </div>
+
+          <div id="kpi" class="file-meta is-hidden" aria-live="polite">
+            <span id="kpiName" class="mono file-meta__name"></span>
+            <span id="kpiSize" class="file-meta__size"></span>
+          </div>
+
+          <form id="form" class="form" novalidate>
+            <div class="presets presets--main" role="group" aria-label="Режим сжатия">
+              <button type="button" class="btn btn--sm btn--preset is-active" data-video-preset="balance">Обычно</button>
+              <button type="button" class="btn btn--sm btn--preset" data-video-preset="messenger">Для чата</button>
+              <button type="button" class="btn btn--sm btn--preset" data-video-preset="max">Меньше размер</button>
+            </div>
+
+            <div class="progress-wrap">
+              <div class="progress is-hidden" id="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="progress__bar" id="progressBar"></div>
+              </div>
+              <p id="phase" class="phase is-hidden" aria-live="polite"></p>
+              <button type="button" id="video-cancel" class="btn btn--sm btn--ghost progress-cancel is-hidden">Отменить</button>
+            </div>
+
+            <div class="actions">
+              <button id="submit" type="submit" class="btn btn--primary">Сжать и скачать</button>
+              <button id="reset" type="button" class="btn btn--ghost">Сбросить</button>
+            </div>
+
+            <details class="advanced">
+              <summary>Тонкие настройки (ffmpeg)</summary>
+              <div class="advanced__body">
+                <div class="row2">
+                  <div class="field">
+                    <label for="codec">Кодек</label>
+                    <select id="codec" name="codec" autocomplete="off"></select>
+                  </div>
+                  <div class="field">
+                    <label for="preset">Preset</label>
+                    <select id="preset" name="preset" autocomplete="off"></select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="scale">Разрешение</label>
+                  <select id="scale" name="scale" autocomplete="off"></select>
+                </div>
+                <div class="field">
+                  <div class="crf-head">
+                    <label for="crf">CRF (качество ↔ размер)</label>
+                    <output id="crfVal" class="mono crf-out" for="crf">23</output>
+                  </div>
+                  <input id="crf" name="crf" type="range" min="0" max="51" step="1" value="23" aria-valuetext="23" />
+                </div>
+                <div class="field">
+                  <label for="audio">Битрейт звука (kbps)</label>
+                  <input id="audio" name="audio_bitrate_k" type="number" min="16" max="512" step="1" value="128" inputmode="numeric" />
+                </div>
+              </div>
+            </details>
+          </form>
+
+          <div id="video-result" class="result-card is-hidden" aria-live="polite"></div>
+          <div id="status" class="status is-hidden" role="status" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <!-- IMAGE -->
+      <div id="panel-image" class="tabpanel" role="tabpanel" aria-labelledby="tab-image" hidden>
+        <section class="card card--primary">
+          <div id="img-dropzone" class="dropzone dropzone--image" role="button" tabindex="0" aria-label="Загрузить изображения">
+            <input id="img-file" class="dropzone__input" type="file" multiple accept="image/*,.jfif" aria-describedby="img-drop-hint" />
+            <div class="dropzone__body">
+              <p class="dropzone__title">Перетащите фото (можно несколько)</p>
+              <p id="img-drop-hint" class="dropzone__hint">JPEG, PNG, WebP, GIF · до {{ max_upload_human }}<span id="img-batch-hint"></span></p>
+            </div>
+          </div>
+
+          <div id="img-preview-wrap" class="preview-wrap is-hidden">
+            <img id="img-preview" class="preview preview--img" alt="Предпросмотр" />
+          </div>
+
+          <div id="img-kpi" class="file-meta is-hidden" aria-live="polite">
+            <span><b id="img-kpiCount">0</b> файлов</span>
+            <span id="img-kpiTotal" class="file-meta__size"></span>
+          </div>
+
+          <ul id="img-file-list" class="img-file-list is-hidden" aria-label="Выбранные файлы"></ul>
+
+          <form id="img-form" class="form" novalidate>
+            <div class="progress-wrap">
+              <div class="progress is-hidden" id="img-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="progress__bar" id="img-progressBar"></div>
+              </div>
+              <p id="img-phase" class="phase is-hidden" aria-live="polite"></p>
+              <button type="button" id="img-cancel" class="btn btn--sm btn--ghost progress-cancel is-hidden">Отменить</button>
+            </div>
+
+            <div class="actions">
+              <button id="img-submit" type="submit" class="btn btn--primary">Оптимизировать и скачать</button>
+              <button id="img-reset" type="button" class="btn btn--ghost">Сбросить</button>
+            </div>
+
+            <details class="advanced">
+              <summary>Тонкие настройки (формат и качество)</summary>
+              <div class="advanced__body">
+                <div class="row2">
+                  <div class="field">
+                    <label for="img-output">Формат</label>
+                    <select id="img-output" autocomplete="off"></select>
+                  </div>
+                  <div class="field">
+                    <label for="img-quality">Качество</label>
+                    <input id="img-quality" type="number" min="40" max="100" step="1" value="85" inputmode="numeric" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="img-max-side">Макс. сторона (px, 0 = без изменений)</label>
+                  <input id="img-max-side" type="number" min="0" max="16384" step="1" value="0" inputmode="numeric" />
+                </div>
+                <div class="field">
+                  <label for="img-upscale">Увеличение</label>
+                  <select id="img-upscale" autocomplete="off"></select>
+                </div>
+                <div class="field" id="img-png-strategy-wrap">
+                  <label for="img-png-strategy">Сжатие PNG</label>
+                  <select id="img-png-strategy" autocomplete="off"></select>
+                </div>
+                <div class="field field--inline is-hidden" id="img-webp-lossless-wrap">
+                  <label class="checkbox-label">
+                    <input id="img-webp-lossless" type="checkbox" />
+                    WebP без потерь
+                  </label>
+                </div>
+                <div class="field field--inline">
+                  <label class="checkbox-label">
+                    <input id="img-strip" type="checkbox" checked />
+                    Удалить EXIF
+                  </label>
+                </div>
+              </div>
+            </details>
+
+            <details class="advanced">
+              <summary>Убрать объект кистью (inpaint)</summary>
+              <div class="advanced__body">
+                <p class="field-hint">Закрасьте область белым — сервер заполнит её по окружению. Shift — ластик.</p>
+                <div class="inpaint-toolbar">
+                  <select id="img-inpaint-file" class="inpaint-select" aria-label="Файл для редактора"></select>
+                  <select id="img-inpaint-method" aria-label="Метод">
+                    <option value="telea" selected>Telea</option>
+                    <option value="ns">Navier-Stokes</option>
+                  </select>
+                  <label class="sr-only" for="img-brush-size">Кисть</label>
+                  <input id="img-brush-size" type="range" min="4" max="80" value="24" title="Размер кисти" />
+                  <button type="button" id="img-inpaint-load" class="btn btn--sm btn--ghost">В редактор</button>
+                  <button type="button" id="img-inpaint-clear" class="btn btn--sm btn--ghost">Очистить</button>
+                  <button type="button" id="img-inpaint-apply" class="btn btn--sm btn--primary">Применить</button>
+                </div>
+                <div id="img-inpaint-stage" class="inpaint-stage is-hidden">
+                  <canvas id="img-inpaint-view" class="inpaint-view" width="1" height="1"></canvas>
+                  <canvas id="img-inpaint-overlay" class="inpaint-overlay" width="1" height="1"></canvas>
+                </div>
+              </div>
+            </details>
+          </form>
+
+          <div id="img-result" class="result-card is-hidden" aria-live="polite"></div>
+          <div id="img-status" class="status is-hidden" role="status" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <!-- AUDIO -->
+      <div id="panel-audio" class="tabpanel" role="tabpanel" aria-labelledby="tab-audio" hidden>
+        <section class="card card--primary">
+          <div id="aud-dropzone" class="dropzone dropzone--audio" role="button" tabindex="0" aria-label="Загрузить аудио или видео">
+            <input id="aud-file" class="dropzone__input" type="file" accept="audio/*,video/*,.mp3,.m4a,.flac,.opus" aria-describedby="aud-drop-hint" />
+            <div class="dropzone__body">
+              <p class="dropzone__title">Аудио или видео</p>
+              <p id="aud-drop-hint" class="dropzone__hint">Из видео извлекается звук · до {{ max_upload_human }}</p>
+            </div>
+          </div>
+
+          <div id="aud-preview-wrap" class="preview-wrap is-hidden">
+            <audio id="aud-preview-audio" class="preview preview--aud" controls preload="metadata"></audio>
+            <video id="aud-preview-video" class="preview preview--aud is-hidden" controls playsinline preload="metadata"></video>
+          </div>
+
+          <div id="aud-kpi" class="file-meta is-hidden" aria-live="polite">
+            <span id="aud-kpiName" class="mono file-meta__name"></span>
+            <span id="aud-kpiSize" class="file-meta__size"></span>
+          </div>
+
+          <form id="aud-form" class="form" novalidate>
+            <div class="presets presets--main" role="group" aria-label="Быстрый выбор">
+              <button type="button" class="btn btn--sm btn--preset is-active" id="aud-preset-mp4mp3">MP4 → MP3</button>
+              <button type="button" class="btn btn--sm btn--preset" id="aud-preset-podcast">Подкаст</button>
+              <button type="button" class="btn btn--sm btn--preset" id="aud-preset-flac">FLAC</button>
+            </div>
+
+            <div class="field field--simple">
+              <label for="aud-output">Формат</label>
+              <select id="aud-output" autocomplete="off"></select>
+            </div>
+
+            <div class="progress-wrap">
+              <div class="progress is-hidden" id="aud-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="progress__bar" id="aud-progressBar"></div>
+              </div>
+              <p id="aud-phase" class="phase is-hidden" aria-live="polite"></p>
+              <button type="button" id="aud-cancel" class="btn btn--sm btn--ghost progress-cancel is-hidden">Отменить</button>
+            </div>
+
+            <div class="actions">
+              <button id="aud-submit" type="submit" class="btn btn--primary">Конвертировать и скачать</button>
+              <button id="aud-reset" type="button" class="btn btn--ghost">Сбросить</button>
+            </div>
+
+            <details class="advanced">
+              <summary>Тонкие настройки (битрейт, частота)</summary>
+              <div class="advanced__body">
+                <div class="row2">
+                  <div class="field" id="aud-bitrate-mode-wrap">
+                    <label for="aud-bitrate-mode">Режим MP3</label>
+                    <select id="aud-bitrate-mode" autocomplete="off">
+                      <option value="cbr" selected>CBR</option>
+                      <option value="vbr">VBR (LAME)</option>
+                    </select>
+                  </div>
+                  <div class="field" id="aud-bitrate-k-wrap">
+                    <label for="aud-bitrate-k">Битрейт (kbps)</label>
+                    <input id="aud-bitrate-k" type="number" min="32" max="510" step="1" value="192" inputmode="numeric" />
+                  </div>
+                </div>
+                <div class="field is-hidden" id="aud-vbr-wrap">
+                  <label for="aud-vbr-quality">Качество VBR: <span class="mono" id="aud-vbr-label">4</span></label>
+                  <input id="aud-vbr-quality" type="range" min="0" max="9" step="1" value="4" />
+                </div>
+                <div class="row2">
+                  <div class="field">
+                    <label for="aud-sample-rate">Частота</label>
+                    <select id="aud-sample-rate" autocomplete="off">
+                      <option value="0" selected>Как в источнике</option>
+                      <option value="44100">44.1 kHz</option>
+                      <option value="48000">48 kHz</option>
+                    </select>
+                  </div>
+                  <div class="field field--inline">
+                    <label class="checkbox-label">
+                      <input id="aud-mono" type="checkbox" />
+                      Моно
+                    </label>
+                  </div>
+                </div>
+                <div class="field field--inline">
+                  <label class="checkbox-label">
+                    <input id="aud-normalize" type="checkbox" />
+                    Нормализация громкости
+                  </label>
+                </div>
+                <div class="field field--inline">
+                  <label class="checkbox-label">
+                    <input id="aud-strip" type="checkbox" checked />
+                    Удалить теги
+                  </label>
+                </div>
+              </div>
+            </details>
+          </form>
+
+          <div id="aud-result" class="result-card is-hidden" aria-live="polite"></div>
+          <div id="aud-status" class="status is-hidden" role="status" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <span>Обработка на этом компьютере</span>
+        <span class="footer__dot" aria-hidden="true">·</span>
+        <a href="/docs">API</a>
+        <span class="footer__dot" aria-hidden="true">·</span>
+        <a href="/health">Статус</a>
+      </div>
+    </footer>
+
+    <script type="module" src="/static/js/main.js"></script>
+  </body>
+</html>

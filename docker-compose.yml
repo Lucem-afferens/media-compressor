@@ -1,0 +1,9 @@
+services:
+  media-compressor:
+    build:
+      context: .
+    ports:
+      - "8090:8000"
+    environment:
+      # "error" | "warning" | "info" | "verbose" | "debug"
+      FFMPEG_LOGLEVEL: "error"
