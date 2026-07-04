@@ -52,16 +52,47 @@ curl -s https://YOUR-SERVICE.onrender.com/health | python3 -m json.tool
 
 ## Обновление с GitHub
 
-Push в `main` деплоится автоматически только если в Render включён **Auto-Deploy** (Settings → Build & Deploy).
+Push в `main` деплоится автоматически только если Render **реально получает webhook** и **сборка проходит успешно**.
 
-**Если сайт показывает старый интерфейс:**
+### Как понять, что на Render старая версия
 
-1. [Render Dashboard](https://dashboard.render.com) → сервис (например `media-compressor-0w0q`)
-2. **Manual Deploy** → **Deploy latest commit**
-3. Дождитесь зелёного статуса Live (~5–10 мин)
-4. Проверка: `curl -s https://media-compressor-0w0q.onrender.com/health` → `"git_commit": "e8817b1"` (или новее)
+```bash
+curl -s https://media-compressor-0w0q.onrender.com/health | python3 -m json.tool
+```
 
-Первый деплой через кнопку «Deploy to Render» часто **не** подписывается на каждый push — нужен Manual Deploy или включить Auto-Deploy и привязать репозиторий.
+| Признак | Старая сборка | Новая |
+|---------|---------------|-------|
+| Поле `git_commit` | **нет** | `"c92c557"` или новее |
+| Вкладка «Аудио» | «Конвертировать и скачать» | «Сжать или конвертировать» |
+| Справка над dropzone | нет синего блока | есть «Сжатие и конвертация аудио» |
+
+Сейчас Auto-Deploy «On Commit» в Dashboard **не гарантирует** деплой: часто webhook не срабатывает или сборка падает, а старый контейнер остаётся Live.
+
+### Шаг 1 — Manual Deploy (сразу)
+
+1. [Render Dashboard](https://dashboard.render.com) → сервис `media-compressor-0w0q`
+2. Вкладка **Events** — есть ли deploy после последних push? Статус **Failed** или deploy вообще не было?
+3. **Manual Deploy** → **Clear build cache & deploy**
+4. Дождитесь **Live** (~5–10 мин)
+5. Снова `curl …/health` — должно появиться `"git_commit"`
+
+### Шаг 2 — Deploy Hook (надёжный auto-deploy)
+
+1. Render → сервис → **Settings** → **Deploy Hook** → **Create Deploy Hook**
+2. GitHub → репозиторий `media-compressor` → **Settings** → **Secrets and variables** → **Actions**
+3. New secret: `RENDER_DEPLOY_HOOK` = URL из Render
+4. Следующий push в `main` запустит workflow `.github/workflows/render-deploy.yml` и принудительно дернёт деплой
+
+### Шаг 3 — проверить привязку репозитория
+
+**Settings** → **Build & Deploy**:
+
+- Repository: `Lucem-afferens/media-compressor`
+- Branch: `main`
+- Runtime: **Docker** (не Python)
+- Dockerfile Path: `./Dockerfile`
+
+Изменения в `render.yaml` **не применяются** к уже созданному сервису, пока вы не сделаете **Blueprint sync** или не выставите те же поля в Dashboard вручную.
 
 ## Railway
 

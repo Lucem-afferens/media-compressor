@@ -8,6 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Bust Docker layer cache when templates/static change (Render may cache aggressively).
+ARG RENDER_GIT_COMMIT=unknown
+LABEL org.opencontainers.image.revision=$RENDER_GIT_COMMIT
+
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
