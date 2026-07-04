@@ -1,153 +1,137 @@
 # Media Compressor
 
-Локальный веб-сервис для сжатия **видео**, **аудио** и **изображений** на вашем компьютере. Файлы не покидают машину — всё обрабатывается через ffmpeg, Pillow и OpenCV.
+Сжатие **видео**, **аудио** и **изображений**. Два варианта использования:
+
+| | **Локальная версия** | **Облачная (Vercel)** |
+|---|----------------------|------------------------|
+| **Где обрабатываются файлы** | На вашем компьютере | На сервере Vercel |
+| **Приватность** | Файлы не покидают машину | Файлы загружаются на сервер |
+| **Режимы** | Видео, аудио, фото, inpaint | Только фото |
+| **Лимит файла** | до 2 ГБ (настраивается) | ~4 МБ |
+| **Установка** | Docker / скрипт / Python | [Deploy на Vercel](#облачная-версия-vercel) |
 
 ![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+---
+
+## Локальная версия
+
+Локальный веб-сервис: файлы **не отправляются в облако**, всё через ffmpeg, Pillow и OpenCV на вашей машине.
+
 [![Установить](https://img.shields.io/badge/▶_Установить-одной_командой-2563eb?style=for-the-badge&logo=terminal&logoColor=white)](#установка-в-один-клик)
 
-## Требования
+### Требования
 
 | Способ | Что нужно | Время первого запуска |
 |--------|-----------|------------------------|
 | **Установка в один клик** | macOS / Linux: git; Docker *или* Python 3.11+ и ffmpeg | 2–5 мин |
-| **Docker вручную** | [Docker Desktop](https://www.docker.com/products/docker-desktop/) + Docker Compose | 2–5 мин |
-| **Python вручную** | Python 3.11+, ffmpeg в `PATH`, ~500 МБ на venv | 1–3 мин |
-| **Windows** | [Docker Desktop](https://www.docker.com/products/docker-desktop/) + Git | 2–5 мин |
+| **Docker** | [Docker Desktop](https://www.docker.com/products/docker-desktop/) + Docker Compose | 2–5 мин |
+| **Python** | Python 3.11+, ffmpeg в `PATH`, ~500 МБ на venv | 1–3 мин |
+| **Windows** | Docker Desktop + Git | 2–5 мин |
 
-**Общее для всех режимов:** свободный порт **8090**, место на диске под временные файлы (до 2 ГБ на файл по умолчанию).
+**Общее:** свободный порт **8090**, место на диске (до 2 ГБ на файл по умолчанию).
 
-**Без ffmpeg** UI откроется, но вкладки «Видео» и «Аудио» не работают — изображения и inpaint доступны.
+**Без ffmpeg** UI откроется, но видео и аудио не работают — фото и inpaint доступны.
 
-## Установка в один клик
+### Установка в один клик
 
-Скопируйте команду в терминал — скрипт сам клонирует репозиторий, поставит зависимости и запустит сервис.
-
-**macOS / Linux** (если есть Docker — использует его; иначе Python + ffmpeg):
+**macOS / Linux:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Lucem-afferens/media-compressor/main/install.sh | bash
 ```
 
-**Windows** (PowerShell, нужен Docker Desktop):
+**Windows (PowerShell):**
 
 ```powershell
 irm https://raw.githubusercontent.com/Lucem-afferens/media-compressor/main/install.ps1 | iex
 ```
 
-После установки откройте **http://localhost:8090**
+→ **http://localhost:8090**
 
-Повторный запуск (из каталога `~/media-compressor`):
+Повторный запуск: `~/media-compressor/start.sh`
 
-```bash
-./start.sh
-```
-
-Другой каталог установки: `MEDIA_COMPRESSOR_DIR=/path/to/dir bash install.sh`
-
-## Возможности
-
-| Режим | Описание |
-|-------|----------|
-| **Видео** | H.264 / H.265, CRF, preset, масштаб, битрейт аудио |
-| **Аудио** | MP3, AAC/M4A, Opus, FLAC; извлечение дорожки из видео |
-| **Изображения** | JPEG, PNG, WebP; один файл или пакет (ZIP) |
-| **Inpaint** | Удаление объектов по маске (OpenCV Telea / NS) |
-
-**UI:** drag-and-drop, пресеты, прогресс загрузки и кодирования, ETA, отмена операций, превью результата.
-
-**API:** синхронные и асинхронные задачи (`async_mode=true`) с polling прогресса ffmpeg.
-
-## Быстрый старт (вручную)
-
-Если предпочитаете установку без скрипта — см. также [LOCAL.md](LOCAL.md).
-
-### Docker (рекомендуется)
+### Быстрый старт (вручную)
 
 ```bash
 git clone https://github.com/Lucem-afferens/media-compressor.git
 cd media-compressor
 docker compose up -d --build
+# или: pip install -r requirements.txt && uvicorn app:app --host 127.0.0.1 --port 8090
 ```
 
-Откройте **http://localhost:8090**
+Подробнее: [LOCAL.md](LOCAL.md)
 
-### Локально
+### Возможности (локально)
 
-```bash
-git clone https://github.com/Lucem-afferens/media-compressor.git
-cd media-compressor
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app:app --host 127.0.0.1 --port 8090
-```
+| Режим | Описание |
+|-------|----------|
+| **Видео** | H.264 / H.265, CRF, preset, масштаб |
+| **Аудио** | MP3, AAC/M4A, Opus, FLAC |
+| **Изображения** | JPEG, PNG, WebP; один файл или ZIP |
+| **Inpaint** | Удаление объектов по маске (OpenCV) |
 
-Требуется **ffmpeg** в `PATH` (`brew install ffmpeg` на macOS, `sudo apt install ffmpeg` на Linux).
+Прогресс загрузки и кодирования, ETA, отмена, async jobs с polling ffmpeg.
 
-## Проверка
+---
+
+## Облачная версия (Vercel)
+
+> **Важно:** в облаке файлы **загружаются на сервер** Vercel для обработки. Это не анонимный и не офлайн-режим.
+> Видео, аудио и inpaint **не поддерживаются** — только оптимизация изображений (лимит ~4 МБ на запрос).
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FLucem-afferens%2Fmedia-compressor&project-name=media-compressor-cloud&env=MAX_UPLOAD_MB&env=MAX_IMAGE_BATCH&env=MAX_IMAGE_MEGAPIXELS&envDescription=Cloud%20limits%20(optional)&envLink=https%3A%2F%2Fgithub.com%2FLucem-afferens%2Fmedia-compressor%23%25D0%25BE%25D0%25B1%25D0%25BB%25D0%25B0%25D1%2587%25D0%25BD%25D0%25B0%25D1%258F-%25D0%25B2%25D0%25B5%25D1%2580%25D1%2581%25D0%25B8%25D1%258F-vercel)
+
+После деплоя Vercel использует `cloud_app.py` (см. `vercel.json`), а не полный `app.py`.
+
+**Почему не весь функционал в облаке?** Vercel — serverless: нет ffmpeg, лимит ~4.5 МБ на запрос, таймаут до 60–300 с, нет фоновых job store. Видеокодирование туда не переносится.
+
+Переменные для облака:
+
+| Переменная | По умолчанию (cloud) |
+|------------|----------------------|
+| `MAX_UPLOAD_MB` | 4 |
+| `MAX_IMAGE_BATCH` | 8 |
+| `MAX_IMAGE_MEGAPIXELS` | 20 |
+
+---
+
+## Проверка (локально)
 
 ```bash
 curl -s http://localhost:8090/health | python3 -m json.tool
-curl -s http://localhost:8090/api/settings | python3 -m json.tool
 ```
 
-Swagger UI: **http://localhost:8090/docs**
+Swagger: **http://localhost:8090/docs**
 
-## API (кратко)
+## API (локально)
 
 ### Видео — `POST /compress`
 
 ```bash
 curl -L -F "file=@input.mp4" \
-  "http://localhost:8090/compress?codec=h264&crf=23&preset=medium&audio_bitrate_k=128&scale=none" \
+  "http://localhost:8090/compress?codec=h264&crf=23&preset=medium" \
   -o output.mp4
 ```
 
-Асинхронно с прогрессом: `?async_mode=true` → `{ "job_id": "..." }`, затем:
+Async: `?async_mode=true` → `GET /jobs/{id}/progress`, `GET /jobs/{id}/result`
 
-- `GET /jobs/{id}/progress` — процент и ETA
-- `GET /jobs/{id}/result` — скачать результат
-- `DELETE /jobs/{id}` — отмена
-
-### Изображения
-
-- `POST /optimize-image` — один файл
-- `POST /optimize-images` — пакет, ответ ZIP
-
-Параметры: `output`, `quality`, `max_side`, `png_strategy`, `webp_lossless`, `upscale`.
+### Изображения — `POST /optimize-image`, `POST /optimize-images`
 
 ### Inpaint — `POST /inpaint-remove`
 
-Белая маска = зона заплатки. Параметры: `method=telea|ns`, `radius`.
-
 ### Аудио — `POST /optimize-audio`
 
-Форматы: MP3, AAC/M4A, Opus, FLAC. Асинхронный режим: `async_mode=true`.
-
-## Параметры видео
-
-| Параметр | Значения |
-|----------|----------|
-| `codec` | `h264`, `h265` |
-| `crf` | 0…51 |
-| `preset` | `ultrafast` … `veryslow` |
-| `audio_bitrate_k` | 16…512 |
-| `scale` | `none`, `1080`, `720`, `480` |
-
-## Переменные окружения
+## Переменные окружения (локально)
 
 | Переменная | По умолчанию | Описание |
 |------------|--------------|----------|
 | `MAX_UPLOAD_MB` | 2048 | Лимит загрузки (MiB) |
-| `MAX_IMAGE_BATCH` | 40 | Макс. файлов в пакете изображений |
-| `MAX_IMAGE_MEGAPIXELS` | 50 | Бюджет мегапикселей на файл |
-| `FFMPEG_TIMEOUT_SEC` | 0 | Таймаут ffmpeg (0 = без лимита) |
-| `FFMPEG_LOGLEVEL` | `error` | Уровень логов ffmpeg |
-| `MEDIA_COMPRESS_TMPDIR` | system temp | Каталог временных файлов |
-
-> `VIDEO_COMPRESS_TMPDIR` по-прежнему поддерживается как устаревший алиас.
+| `MAX_IMAGE_BATCH` | 40 | Макс. файлов в пакете |
+| `MAX_IMAGE_MEGAPIXELS` | 50 | Бюджет мегапикселей |
+| `FFMPEG_TIMEOUT_SEC` | 0 | Таймаут ffmpeg |
+| `MEDIA_COMPRESS_TMPDIR` | system temp | Временные файлы |
 
 ## Разработка
 
@@ -157,16 +141,12 @@ pytest tests/ -q
 uvicorn app:app --host 127.0.0.1 --port 8090 --reload
 ```
 
-Структура:
-
 ```
-app.py          — FastAPI, маршруты
-jobs.py         — async jobs, прогресс ffmpeg
+app.py          — локальный FastAPI (полный)
+cloud_app.py    — облачный FastAPI (только фото)
+jobs.py         — async jobs, ffmpeg progress
 images.py       — оптимизация изображений
-image_tools.py  — inpaint (OpenCV)
-static/js/      — модульный фронтенд
-templates/      — HTML UI
-tests/          — pytest
+vercel.json     — деплой на Vercel
 ```
 
 ## Лицензия

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Онлайн-сжатие изображений JPEG, PNG, WebP." />
+    <meta name="theme-color" content="#0b1220" />
+    <title>Media Compressor — фото онлайн</title>
+    <link rel="stylesheet" href="/static/app.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">К основному содержимому</a>
+
+    <header class="site-header">
+      <div class="wrap site-header__inner">
+        <div class="brand">
+          <span class="brand__mark" aria-hidden="true"></span>
+          <div>
+            <p class="brand__eyebrow">Онлайн · обработка на сервере</p>
+            <h1 class="brand__title">Media Compressor</h1>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="wrap main" tabindex="-1">
+      <div class="banner banner--warn" role="status">
+        <strong>Файлы загружаются на сервер</strong> для обработки. Видео и аудио здесь недоступны.
+        Для полного режима без отправки файлов в сеть —
+        <a href="{{ local_repo_url }}#локальная-версия">локальная установка</a>.
+      </div>
+
+      <div id="banner-pillow" class="banner banner--warn is-hidden" role="alert">
+        <strong>Pillow недоступен.</strong> Сервис временно недоступен.
+      </div>
+
+      <div id="panel-image" class="tabpanel" role="region" aria-label="Изображения">
+        <section class="card card--primary">
+          <div id="img-dropzone" class="dropzone dropzone--image" role="button" tabindex="0" aria-label="Загрузить изображения">
+            <input id="img-file" class="dropzone__input" type="file" multiple accept="image/*,.jfif" aria-describedby="img-drop-hint" />
+            <div class="dropzone__body">
+              <p class="dropzone__title">Перетащите фото (можно несколько)</p>
+              <p id="img-drop-hint" class="dropzone__hint">JPEG, PNG, WebP, GIF · до {{ max_upload_human }}<span id="img-batch-hint"></span></p>
+            </div>
+          </div>
+
+          <div id="img-preview-wrap" class="preview-wrap is-hidden">
+            <img id="img-preview" class="preview preview--img" alt="Предпросмотр" />
+          </div>
+
+          <div id="img-kpi" class="file-meta is-hidden" aria-live="polite">
+            <span><b id="img-kpiCount">0</b> файлов</span>
+            <span id="img-kpiTotal" class="file-meta__size"></span>
+          </div>
+
+          <ul id="img-file-list" class="img-file-list is-hidden" aria-label="Выбранные файлы"></ul>
+
+          <form id="img-form" class="form" novalidate>
+            <div class="progress-wrap">
+              <div class="progress is-hidden" id="img-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="progress__bar" id="img-progressBar"></div>
+              </div>
+              <p id="img-phase" class="phase is-hidden" aria-live="polite"></p>
+              <button type="button" id="img-cancel" class="btn btn--sm btn--ghost progress-cancel is-hidden">Отменить</button>
+            </div>
+
+            <div class="actions">
+              <button id="img-submit" type="submit" class="btn btn--primary">Оптимизировать и скачать</button>
+              <button id="img-reset" type="button" class="btn btn--ghost">Сбросить</button>
+            </div>
+
+            <details class="advanced">
+              <summary>Тонкие настройки (формат и качество)</summary>
+              <div class="advanced__body">
+                <div class="row2">
+                  <div class="field">
+                    <label for="img-output">Формат</label>
+                    <select id="img-output" autocomplete="off"></select>
+                  </div>
+                  <div class="field">
+                    <label for="img-quality">Качество</label>
+                    <input id="img-quality" type="number" min="40" max="100" step="1" value="85" inputmode="numeric" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="img-max-side">Макс. сторона (px, 0 = без изменений)</label>
+                  <input id="img-max-side" type="number" min="0" max="16384" step="1" value="0" inputmode="numeric" />
+                </div>
+                <div class="field">
+                  <label for="img-upscale">Увеличение</label>
+                  <select id="img-upscale" autocomplete="off"></select>
+                </div>
+                <div class="field" id="img-png-strategy-wrap">
+                  <label for="img-png-strategy">Сжатие PNG</label>
+                  <select id="img-png-strategy" autocomplete="off"></select>
+                </div>
+                <div class="field field--inline is-hidden" id="img-webp-lossless-wrap">
+                  <label class="checkbox-label">
+                    <input id="img-webp-lossless" type="checkbox" />
+                    WebP без потерь
+                  </label>
+                </div>
+                <div class="field field--inline">
+                  <label class="checkbox-label">
+                    <input id="img-strip" type="checkbox" checked />
+                    Удалить EXIF
+                  </label>
+                </div>
+              </div>
+            </details>
+          </form>
+
+          <div id="img-result" class="result-card is-hidden" aria-live="polite"></div>
+          <div id="img-status" class="status is-hidden" role="status" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <span>Обработка на сервере Vercel</span>
+        <span class="footer__dot" aria-hidden="true">·</span>
+        <a href="{{ local_repo_url }}">Локальная версия</a>
+        <span class="footer__dot" aria-hidden="true">·</span>
+        <a href="/health">Статус</a>
+      </div>
+    </footer>
+
+    <script type="module" src="/static/js/cloud-main.js"></script>
+  </body>
+</html>
