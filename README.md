@@ -23,7 +23,7 @@
 ### Docker (рекомендуется)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/media-compressor.git
+git clone https://github.com/Lucem-afferens/media-compressor.git
 cd media-compressor
 docker compose up -d --build
 ```
@@ -33,7 +33,7 @@ docker compose up -d --build
 ### Локально
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/media-compressor.git
+git clone https://github.com/Lucem-afferens/media-compressor.git
 cd media-compressor
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .\.venv\Scripts\Activate.ps1
