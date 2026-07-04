@@ -94,7 +94,12 @@ def _deployment_mode() -> Literal["local", "cloud"]:
     explicit = os.environ.get("DEPLOYMENT_MODE", "").strip().lower()
     if explicit in ("local", "cloud"):
         return explicit  # type: ignore[return-value]
-    if os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_SERVICE_NAME"):
+    if (
+        os.environ.get("RAILWAY_ENVIRONMENT")
+        or os.environ.get("RAILWAY_SERVICE_NAME")
+        or os.environ.get("RENDER")
+        or os.environ.get("RENDER_SERVICE_NAME")
+    ):
         return "cloud"
     return "local"
 

@@ -1,0 +1,20 @@
+# Render Blueprint — полный Media Compressor (Docker + ffmpeg)
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: media-compressor
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DEPLOYMENT_MODE
+        value: cloud
+      - key: MAX_UPLOAD_MB
+        value: "100"
+      - key: MAX_IMAGE_BATCH
+        value: "10"
+      - key: FFMPEG_TIMEOUT_SEC
+        value: "1800"
+      - key: FFMPEG_LOGLEVEL
+        value: error
