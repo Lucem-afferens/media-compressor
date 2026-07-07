@@ -542,7 +542,11 @@ def api_settings() -> dict[str, Any]:
 
 def _transcription_settings_block() -> dict[str, Any]:
     available = bool(getattr(app.state, "transcription_available", False))
-    cfg = getattr(app.state, "transcribe_config", None)
+    cfg = None
+    if available:
+        from transcription.config import load_config
+
+        cfg = load_config()
     tier = cfg.tier if cfg else "degraded"
     max_dur = cfg.max_duration_sec if cfg else 180
     return {
