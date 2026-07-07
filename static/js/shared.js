@@ -79,6 +79,7 @@ export function estimateProcessingSec(bytes, kind, { fileCount = 1, preset } = {
   if (kind === "image-batch") return Math.max(2, mb * 0.25 * Math.sqrt(fileCount));
   if (kind === "image") return Math.max(1, mb * 0.4);
   if (kind === "inpaint") return Math.max(1, mb * 0.6);
+  if (kind === "transcribe") return Math.max(8, mb * 4);
   return Math.max(3, mb * 2);
 }
 
@@ -364,6 +365,100 @@ export async function postJson(url, formData, { signal } = {}) {
     throw new Error(parseErrorDetail(text));
   }
   return res.json();
+}
+
+export async function fetchJobTranscript(jobId, signal) {
+  const res = await fetch(`/jobs/${jobId}/transcript`, { signal, headers: { Accept: "application/json" } });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(parseErrorDetail(text));
+  }
+  return res.json();
+}
+
+export function showTranscriptResult(cardEl, { transcript, blob, filename, elapsedSec, mediaUrl }) {
+  if (!cardEl || !transcript) return;
+  const timeStr = elapsedSec != null ? `${elapsedSec.toFixed(1)} с` : "—";
+  const modeLabel = transcript.mode === "song" ? "Песня" : "Речь";
+  const segHtml = (transcript.segments || [])
+    .map(
+      (s, i) =>
+        `<button type="button" class="transcript-line" data-idx="${i}" data-start="${s.start}" data-end="${s.end}">` +
+        `<span class="transcript-line__time mono">${formatTranscriptTime(s.start)}</span>` +
+        `<span class="transcript-line__text">${escapeHtml(s.text)}</span></button>`,
+    )
+    .join("");
+
+  cardEl.innerHTML =
+    `<div class="result-card__head"><strong>Транскрипт</strong>` +
+    `<span class="result-card__time mono">${escapeHtml(timeStr)} · ${escapeHtml(modeLabel)} · ${escapeHtml(transcript.language || "")}</span></div>` +
+    `<div class="transcript-layout">` +
+    (mediaUrl
+      ? `<audio class="preview preview--aud transcript-player" controls src="${mediaUrl}" id="transcript-audio"></audio>`
+      : "") +
+    `<div class="transcript-view" id="transcript-view">${segHtml}</div>` +
+    `</div>` +
+    `<div class="result-card__actions">` +
+    `<button type="button" class="btn btn--sm btn--ghost transcript-copy">Скопировать</button>` +
+    `<button type="button" class="btn btn--primary btn--sm result-download">Скачать ZIP</button>` +
+    `</div>`;
+  cardEl.classList.remove("is-hidden");
+  cardEl._resultBlob = blob;
+  cardEl._resultFilename = filename;
+  cardEl._transcript = transcript;
+
+  const player = cardEl.querySelector("#transcript-audio");
+  const view = cardEl.querySelector("#transcript-view");
+  const lines = [...cardEl.querySelectorAll(".transcript-line")];
+
+  lines.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const t = parseFloat(btn.dataset.start);
+      if (player && Number.isFinite(t)) {
+        player.currentTime = Math.max(0, t);
+        player.play().catch(() => {});
+      }
+    });
+  });
+
+  if (player && view) {
+    player.addEventListener("timeupdate", () => {
+      const t = player.currentTime;
+      let active = -1;
+      lines.forEach((btn, i) => {
+        const start = parseFloat(btn.dataset.start);
+        const end = parseFloat(btn.dataset.end);
+        const on = t >= start && t < end + 0.05;
+        btn.classList.toggle("is-active", on);
+        if (on) active = i;
+      });
+      if (active >= 0) {
+        const el = lines[active];
+        const top = el.offsetTop - view.clientHeight / 2 + el.clientHeight / 2;
+        view.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      }
+    });
+  }
+
+  const copyBtn = cardEl.querySelector(".transcript-copy");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", async () => {
+      const text = (transcript.segments || []).map((s) => s.text).join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("Текст скопирован");
+      } catch (_) {
+        showToast("Не удалось скопировать", "err");
+      }
+    });
+  }
+}
+
+function formatTranscriptTime(sec) {
+  if (!Number.isFinite(sec)) return "0:00";
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export async function fetchJobResult(jobId, signal) {

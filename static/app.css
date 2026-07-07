@@ -1301,3 +1301,60 @@ select:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+.banner--info {
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--panel-border));
+}
+
+.transcript-layout {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.transcript-player {
+  width: 100%;
+}
+
+.transcript-view {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 4px;
+}
+
+.transcript-line {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.transcript-line:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.transcript-line.is-active {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.transcript-line__time {
+  font-size: 11px;
+  color: var(--muted2);
+  padding-top: 2px;
+}
+
+.transcript-line__text {
+  line-height: 1.45;
+}

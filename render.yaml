@@ -23,3 +23,9 @@ services:
         value: "1800"
       - key: FFMPEG_LOGLEVEL
         value: error
+      - key: TRANSCRIBE_TIER
+        value: degraded
+      - key: WHISPER_MODEL
+        value: base
+      - key: MAX_TRANSCRIBE_SEC
+        value: "180"

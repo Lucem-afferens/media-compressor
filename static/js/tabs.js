@@ -1,20 +1,23 @@
 import { $, loadPrefs, savePrefs } from "./shared.js";
 
-const TAB_ORDER = ["video", "image", "audio"];
+const TAB_ORDER = ["video", "image", "audio", "transcribe"];
 
 export function initTabs() {
   let tabIndex = 0;
   const tabVideo = $("tab-video");
   const tabImage = $("tab-image");
   const tabAudio = $("tab-audio");
+  const tabTranscribe = $("tab-transcribe");
   const panelVideo = $("panel-video");
   const panelImage = $("panel-image");
   const panelAudio = $("panel-audio");
+  const panelTranscribe = $("panel-transcribe");
   const tablist = tabVideo?.parentElement;
-  if (!tabVideo || !tabImage || !tabAudio || !panelVideo || !panelImage || !panelAudio) return;
+  if (!tabVideo || !tabImage || !tabAudio || !tabTranscribe || !panelVideo || !panelImage || !panelAudio || !panelTranscribe)
+    return;
 
-  const tabs = [tabVideo, tabImage, tabAudio];
-  const panels = [panelVideo, panelImage, panelAudio];
+  const tabs = [tabVideo, tabImage, tabAudio, tabTranscribe];
+  const panels = [panelVideo, panelImage, panelAudio, panelTranscribe];
 
   function selectTab(which, persist = true) {
     const idx = TAB_ORDER.indexOf(which);
@@ -34,6 +37,7 @@ export function initTabs() {
   tabVideo.addEventListener("click", () => selectTab("video"));
   tabImage.addEventListener("click", () => selectTab("image"));
   tabAudio.addEventListener("click", () => selectTab("audio"));
+  tabTranscribe.addEventListener("click", () => selectTab("transcribe"));
 
   if (tablist) {
     tablist.addEventListener("keydown", (e) => {
@@ -51,7 +55,7 @@ export function initTabs() {
       }
       if (e.key === "End") {
         e.preventDefault();
-        selectTab("audio");
+        selectTab("transcribe");
       }
     });
   }

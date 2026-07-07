@@ -39,6 +39,14 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+Опционально — вкладка **«Текст»** (faster-whisper):
+
+```bash
+pip install -r requirements-transcribe.txt
+```
+
+При первом запуске скачается модель Whisper (~150 MB для `base`).
+
 ### Запуск
 
 ```bash

@@ -21,7 +21,7 @@ from starlette.background import BackgroundTask
 
 import image_tools as image_tools_mod
 import images as images_mod
-from jobs import JobPhase, job_store, run_ffmpeg_with_progress
+from jobs import JobPhase, job_store, run_ffmpeg_with_progress, run_transcription_job
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -72,6 +72,7 @@ PngStrategy = Literal["lossless", "smart"]
 ImageUpscale = Literal["none", "2k", "4k"]
 AudioOutput = Literal["mp3", "aac_m4a", "opus", "flac"]
 AudioBitrateMode = Literal["cbr", "vbr"]
+TranscribeMode = Literal["speech", "song", "auto"]
 
 
 def _env_int(name: str, default: int) -> int:
@@ -311,6 +312,14 @@ async def lifespan(app: FastAPI):
         app.state.opencv_available = True
     except Exception:
         app.state.opencv_available = False
+    try:
+        from transcription.config import load_config, transcription_available
+
+        app.state.transcription_available = transcription_available()
+        app.state.transcribe_config = load_config() if app.state.transcription_available else None
+    except Exception:
+        app.state.transcription_available = False
+        app.state.transcribe_config = None
     yield
 
 
@@ -345,6 +354,7 @@ def health() -> dict[str, Any]:
         "ffmpeg": ffmpeg_ok,
         "pillow": pillow_ok,
         "opencv": bool(getattr(app.state, "opencv_available", False)),
+        "transcription": bool(getattr(app.state, "transcription_available", False)),
         "max_upload_bytes": getattr(app.state, "max_upload_bytes", _max_upload_bytes()),
     }
 
@@ -526,7 +536,145 @@ def api_settings() -> dict[str, Any]:
                 {"id": "flac", "label": "FLAC", "hint": "Архив без потерь"},
             ],
         },
+        "transcription": _transcription_settings_block(),
     }
+
+
+def _transcription_settings_block() -> dict[str, Any]:
+    available = bool(getattr(app.state, "transcription_available", False))
+    cfg = getattr(app.state, "transcribe_config", None)
+    tier = cfg.tier if cfg else "degraded"
+    max_dur = cfg.max_duration_sec if cfg else 180
+    return {
+        "available": available and bool(getattr(app.state, "ffmpeg_path", None)),
+        "endpoint": "/transcribe",
+        "tier": tier,
+        "max_duration_sec": max_dur,
+        "max_duration_human": f"{max_dur // 60} мин" if max_dur >= 60 else f"{max_dur} с",
+        "modes": [
+            {"id": "auto", "label": "Авто", "hint": "Речь или песня по эвристике"},
+            {"id": "speech", "label": "Речь", "hint": "Предложения с таймкодами"},
+            {"id": "song", "label": "Песня", "hint": "Строки; на full tier — отделение вокала"},
+        ],
+        "languages": [
+            {"id": "auto", "label": "Авто"},
+            {"id": "ru", "label": "Русский"},
+            {"id": "en", "label": "English"},
+            {"id": "de", "label": "Deutsch"},
+            {"id": "fr", "label": "Français"},
+            {"id": "es", "label": "Español"},
+        ],
+        "allowed_suffixes": sorted(ALLOWED_AUDIO_INPUT_SUFFIXES),
+        "outputs": ["zip", "json"],
+        "genius_configured": bool(cfg and cfg.genius_configured),
+        "demucs_enabled": bool(cfg and cfg.demucs_enabled),
+    }
+
+
+_transcribe_semaphore: threading.Semaphore | None = None
+_transcribe_semaphore_limit: int = 0
+
+
+def _transcribe_semaphore_for(cfg: Any) -> threading.Semaphore:
+    global _transcribe_semaphore, _transcribe_semaphore_limit
+    limit = max(1, cfg.max_concurrent if cfg else 1)
+    if _transcribe_semaphore is None or _transcribe_semaphore_limit != limit:
+        _transcribe_semaphore = threading.Semaphore(limit)
+        _transcribe_semaphore_limit = limit
+    return _transcribe_semaphore
+
+
+def _start_transcription_job(
+    job_id: str,
+    *,
+    ffmpeg_bin: str,
+    in_path: Path,
+    out_zip: Path,
+    stem: str,
+    mode: TranscribeMode,
+    language: str,
+    artist: str | None,
+    title: str | None,
+    cleanup_paths: list[Path],
+) -> None:
+    from transcription.config import load_config
+    from transcription.pipeline import run_transcription
+
+    cfg = load_config()
+    job = job_store.create(job_id, "transcribe")
+    sem = _transcribe_semaphore_for(cfg)
+
+    def _run() -> None:
+        acquired = sem.acquire(blocking=True)
+        try:
+            def _worker(
+                *,
+                on_progress: Any,
+                cancel_check: Any,
+            ) -> None:
+                result, zip_path = run_transcription(
+                    ffmpeg_bin,
+                    in_path,
+                    mode=mode,
+                    language=language,
+                    artist=artist,
+                    title=title,
+                    cfg=cfg,
+                    on_progress=on_progress,
+                    cancel_check=cancel_check,
+                )
+                if zip_path != out_zip:
+                    shutil.move(str(zip_path), str(out_zip))
+                with job._lock:
+                    job.result_path = out_zip
+                    job.download_name = f"{stem}.transcript.zip"
+                    job.media_type = "application/zip"
+                    job.result_meta = result.to_dict()
+                    job.phase = JobPhase.DONE
+
+            run_transcription_job(job, _worker)
+        except InterruptedError:
+            with job._lock:
+                if job.phase != JobPhase.CANCELLED:
+                    job.phase = JobPhase.CANCELLED
+                    job.message = "Отменено пользователем"
+        except Exception as exc:
+            with job._lock:
+                if job.phase == JobPhase.CANCELLED:
+                    return
+                job.phase = JobPhase.ERROR
+                job.error = str(exc) or "Ошибка транскрипции."
+        finally:
+            if acquired:
+                sem.release()
+            for p in cleanup_paths:
+                if p != out_zip:
+                    try:
+                        p.unlink(missing_ok=True)
+                    except OSError:
+                        pass
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
+@app.get("/jobs/{job_id}/transcript")
+def job_transcript(job_id: str) -> dict[str, Any]:
+    job = job_store.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail={"code": "job_not_found", "message": "Задача не найдена."})
+    if job.kind != "transcribe":
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "not_transcript_job", "message": "Это не задача транскрипции."},
+        )
+    if job.phase == JobPhase.ERROR:
+        raise HTTPException(
+            status_code=422,
+            detail={"code": "job_failed", "message": job.error or "Ошибка обработки."},
+        )
+    if job.phase != JobPhase.DONE or not job.result_meta:
+        raise HTTPException(status_code=409, detail={"code": "job_not_ready", "message": "Результат ещё не готов."})
+    return job.result_meta
 
 
 @app.post("/compress")
@@ -1194,4 +1342,118 @@ async def optimize_audio_media(
     except Exception:
         _unlink_best_effort(in_path)
         _unlink_best_effort(out_path)
+        raise
+
+
+@app.post("/transcribe")
+async def transcribe_media(
+    request: Request,
+    file: UploadFile = File(..., description="Аудио или видео для транскрипции"),
+    mode: TranscribeMode = "auto",
+    language: str = Query("auto", description="Язык: auto, ru, en, …"),
+    artist: str | None = Query(None, description="Исполнитель (для Genius)"),
+    title: str | None = Query(None, description="Название трека (для Genius)"),
+    output: Literal["zip", "json"] = Query("zip", description="Формат: zip или json (json — только синхронно)"),
+    async_mode: bool = Query(True, description="Асинхронный режим с polling прогресса"),
+) -> Response:
+    if not getattr(request.app.state, "transcription_available", False):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "transcription_unavailable",
+                "message": "Транскрипция недоступна. Установите faster-whisper (requirements-transcribe.txt).",
+            },
+        )
+
+    ffmpeg_bin = getattr(request.app.state, "ffmpeg_path", None) or shutil.which("ffmpeg")
+    if not ffmpeg_bin:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "ffmpeg_missing", "message": "ffmpeg не найден."},
+        )
+
+    stem, suffix = _safe_filename_parts(
+        file.filename,
+        default_suffix=".mp3",
+        allowed_suffixes=ALLOWED_AUDIO_INPUT_SUFFIXES,
+        default_stem="audio",
+    )
+    max_bytes = getattr(request.app.state, "max_upload_bytes", _max_upload_bytes())
+
+    tmp_root = _tmpdir()
+    tmp_root.mkdir(parents=True, exist_ok=True)
+    job_id = uuid.uuid4().hex
+    in_path = tmp_root / f"tr-{job_id}-in{suffix}"
+    out_zip = tmp_root / f"tr-{job_id}-out.zip"
+
+    def _unlink_best_effort(p: Path) -> None:
+        try:
+            p.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    try:
+        await _write_upload_to_path(file, in_path, max_bytes)
+
+        if async_mode:
+            _start_transcription_job(
+                job_id,
+                ffmpeg_bin=ffmpeg_bin,
+                in_path=in_path,
+                out_zip=out_zip,
+                stem=stem,
+                mode=mode,
+                language=language,
+                artist=artist,
+                title=title,
+                cleanup_paths=[in_path],
+            )
+            return JSONResponse({"job_id": job_id}, status_code=202)
+
+        from transcription.config import load_config
+        from transcription.pipeline import run_transcription
+
+        cfg = load_config()
+        sem = _transcribe_semaphore_for(cfg)
+        sem.acquire()
+        try:
+            result, zip_path = await asyncio.to_thread(
+                run_transcription,
+                ffmpeg_bin,
+                in_path,
+                mode=mode,
+                language=language,
+                artist=artist,
+                title=title,
+                cfg=cfg,
+            )
+        finally:
+            sem.release()
+            _unlink_best_effort(in_path)
+
+        if output == "json":
+            _unlink_best_effort(zip_path)
+            return JSONResponse(result.to_dict())
+
+        if not zip_path.exists():
+            raise HTTPException(status_code=500, detail={"code": "empty_output", "message": "Пустой архив."})
+
+        download_name = f"{stem}.transcript.zip"
+        if zip_path != out_zip:
+            shutil.move(str(zip_path), str(out_zip))
+            zip_path = out_zip
+
+        return FileResponse(
+            path=str(zip_path),
+            media_type="application/zip",
+            filename=download_name,
+            background=BackgroundTask(_unlink_best_effort, zip_path),
+        )
+    except HTTPException:
+        _unlink_best_effort(in_path)
+        _unlink_best_effort(out_zip)
+        raise
+    except Exception:
+        _unlink_best_effort(in_path)
+        _unlink_best_effort(out_zip)
         raise

@@ -17,6 +17,7 @@ export let settings = {
     inpaint_remove: { available: false },
   },
   audio_optimization: { available: true, outputs: [] },
+  transcription: { available: false, modes: [], languages: [] },
 };
 
 export async function loadSettings() {
@@ -40,6 +41,10 @@ export async function loadSettings() {
         inpaint_remove: { ...imgDefaults.inpaint_remove, ...(jo.inpaint_remove || {}) },
       },
       audio_optimization: { ...{ available: true, outputs: [] }, ...(j.audio_optimization || {}) },
+      transcription: {
+        ...{ available: false, modes: [], languages: [], tier: "degraded" },
+        ...(j.transcription || {}),
+      },
     };
     applySettingsToDom();
     return settings;
@@ -85,6 +90,36 @@ function applySettingsToDom() {
 
   const aSub = $("aud-submit");
   if (aSub) aSub.disabled = settings.audio_optimization.available === false;
+
+  const trSub = $("tr-submit");
+  if (trSub) trSub.disabled = settings.transcription?.available === false;
+
+  const bannerTr = $("banner-transcribe");
+  if (bannerTr) bannerTr.classList.toggle("is-hidden", settings.transcription?.available !== false);
+
+  const bannerTrDegraded = $("banner-transcribe-degraded");
+  if (bannerTrDegraded) {
+    bannerTrDegraded.classList.toggle(
+      "is-hidden",
+      !settings.transcription?.available || settings.transcription?.tier !== "degraded",
+    );
+  }
+
+  const bannerGenius = $("banner-genius");
+  if (bannerGenius) {
+    bannerGenius.classList.toggle(
+      "is-hidden",
+      !settings.transcription?.available || settings.transcription?.genius_configured,
+    );
+  }
+
+  const trHint = $("tr-duration-hint");
+  if (trHint && settings.transcription?.max_duration_human) {
+    trHint.textContent = `До ${settings.transcription.max_duration_human} · MP3, WAV, FLAC… · MP4/MOV/MKV`;
+  }
+
+  populateSelect($("tr-mode"), settings.transcription?.modes || []);
+  populateSelect($("tr-language"), settings.transcription?.languages || []);
 
   const bit = $("banner-img-tools");
   if (bit) {

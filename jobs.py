@@ -34,6 +34,7 @@ class JobState:
     media_type: str | None = None
     error: str | None = None
     stderr_tail: str | None = None
+    result_meta: dict[str, Any] | None = None
     started_at: float = field(default_factory=time.monotonic)
     _process: subprocess.Popen[bytes] | None = field(default=None, repr=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
@@ -57,6 +58,7 @@ class JobState:
                 "eta_sec": eta_sec,
                 "done": self.phase in (JobPhase.DONE, JobPhase.ERROR, JobPhase.CANCELLED),
                 "error": self.error,
+                "result_meta": self.result_meta,
             }
 
 
@@ -221,6 +223,44 @@ def run_ffmpeg_with_progress(
     finally:
         with job._lock:
             job._process = None
+
+
+def run_transcription_job(
+    job: JobState,
+    worker: Any,
+) -> None:
+    """Run a transcription worker that updates job.percent/message."""
+    with job._lock:
+        job.phase = JobPhase.PROCESSING
+        job.message = "Подготовка…"
+        job.percent = max(job.percent, 2.0)
+
+    def _on_progress(pct: float, msg: str) -> None:
+        with job._lock:
+            if job.phase == JobPhase.CANCELLED:
+                raise InterruptedError("cancelled")
+            job.percent = max(job.percent, min(99.0, pct))
+            job.message = msg
+
+    def _cancel_check() -> bool:
+        with job._lock:
+            return job.phase == JobPhase.CANCELLED
+
+    try:
+        worker(on_progress=_on_progress, cancel_check=_cancel_check)
+        with job._lock:
+            if job.phase == JobPhase.CANCELLED:
+                return
+            job.percent = 100.0
+            job.message = "Готово"
+    except InterruptedError:
+        with job._lock:
+            if job.phase != JobPhase.CANCELLED:
+                job.phase = JobPhase.CANCELLED
+                job.message = "Отменено пользователем"
+        raise
+    except Exception:
+        raise
 
 
 job_store = JobStore()

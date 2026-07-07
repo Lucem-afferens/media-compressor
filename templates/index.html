@@ -40,14 +40,24 @@
       <div id="banner-img-tools" class="banner banner--warn is-hidden" role="status">
         <strong>Заплатка по маске недоступна.</strong> Нужен OpenCV на сервере.
       </div>
+      <div id="banner-transcribe" class="banner banner--warn is-hidden" role="alert">
+        <strong>Транскрипция недоступна.</strong> Установите faster-whisper (<code>requirements-transcribe.txt</code>).
+      </div>
+      <div id="banner-transcribe-degraded" class="banner banner--warn is-hidden" role="status">
+        <strong>Облачный режим:</strong> до 3 мин, без отделения вокала; для песен качество ниже. Полный режим — локально или на платном тарифе.
+      </div>
+      <div id="banner-genius" class="banner banner--info is-hidden" role="status">
+        Текст песни только из распознавания. Для известных треков добавьте <code>GENIUS_API_TOKEN</code> на сервере.
+      </div>
 
       <div class="tabs" role="presentation">
         <div class="tablist" role="tablist" aria-label="Режим">
           <button type="button" class="tab" role="tab" id="tab-video" aria-controls="panel-video" aria-selected="true" tabindex="0">Видео</button>
           <button type="button" class="tab" role="tab" id="tab-image" aria-controls="panel-image" aria-selected="false" tabindex="-1">Фото</button>
           <button type="button" class="tab" role="tab" id="tab-audio" aria-controls="panel-audio" aria-selected="false" tabindex="-1">Аудио</button>
+          <button type="button" class="tab" role="tab" id="tab-transcribe" aria-controls="panel-transcribe" aria-selected="false" tabindex="-1">Текст</button>
         </div>
-        <p class="tabs__hint">Видео — сжать ролик · Фото — оптимизировать · Аудио — сжать звук или <strong>извлечь из видео</strong>.</p>
+        <p class="tabs__hint">Видео · Фото · Аудио · <strong>Текст</strong> — речь и песни с таймкодами.</p>
       </div>
 
       <!-- VIDEO -->
@@ -396,6 +406,88 @@
 
           <div id="aud-result" class="result-card is-hidden" aria-live="polite"></div>
           <div id="aud-status" class="status is-hidden" role="status" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <!-- TRANSCRIBE -->
+      <div id="panel-transcribe" class="tabpanel" role="tabpanel" aria-labelledby="tab-transcribe" hidden>
+        <section class="card card--primary">
+          <aside class="panel-guide" aria-label="Справка по транскрипции">
+            <h2 class="panel-guide__title">Текст из аудио и видео</h2>
+            <p class="panel-guide__lead">Распознавание речи и песен с <strong>таймкодами</strong> — предложения для речи, строки для песен. Экспорт TXT, SRT, VTT, LRC, JSON.</p>
+            <dl class="panel-guide__grid">
+              <div class="panel-guide__row">
+                <dt>Режимы</dt>
+                <dd><strong>Речь</strong> — предложения · <strong>Песня</strong> — строки · <strong>Авто</strong> — по эвристике</dd>
+              </div>
+              <div class="panel-guide__row">
+                <dt>Экспорт</dt>
+                <dd>ZIP: transcript.txt, subtitles.srt, subtitles.vtt, lyrics.lrc (песни), transcript.json</dd>
+              </div>
+            </dl>
+            <ol class="panel-guide__steps">
+              <li>Загрузите аудио или видео</li>
+              <li>Выберите режим и язык; для песен — исполнитель/название (Genius)</li>
+              <li>Дождитесь результата — клик по строке перематывает плеер</li>
+            </ol>
+          </aside>
+          <div id="tr-dropzone" class="dropzone dropzone--audio" role="button" tabindex="0" aria-label="Загрузить файл для транскрипции">
+            <input id="tr-file" class="dropzone__input" type="file" accept="audio/*,video/*,.mp3,.m4a,.flac,.opus" aria-describedby="tr-drop-hint" />
+            <div class="dropzone__body">
+              <p class="dropzone__title">Аудио или видео → текст с таймкодами</p>
+              <p id="tr-drop-hint" class="dropzone__hint"><span id="tr-duration-hint">До 3 мин в облаке</span> · до {{ max_upload_human }}</p>
+            </div>
+          </div>
+
+          <div id="tr-preview-wrap" class="preview-wrap is-hidden">
+            <audio id="tr-preview-audio" class="preview preview--aud" controls preload="metadata"></audio>
+            <video id="tr-preview-video" class="preview preview--aud is-hidden" controls playsinline preload="metadata"></video>
+          </div>
+
+          <div id="tr-kpi" class="file-meta is-hidden" aria-live="polite">
+            <span id="tr-kpiName" class="mono file-meta__name"></span>
+            <span id="tr-kpiSize" class="file-meta__size"></span>
+          </div>
+
+          <form id="tr-form" class="form" novalidate>
+            <div class="row2">
+              <div class="field field--simple">
+                <label for="tr-mode">Режим</label>
+                <select id="tr-mode" autocomplete="off"></select>
+              </div>
+              <div class="field field--simple">
+                <label for="tr-language">Язык</label>
+                <select id="tr-language" autocomplete="off"></select>
+              </div>
+            </div>
+
+            <div id="tr-genius-wrap" class="row2 is-hidden">
+              <div class="field">
+                <label for="tr-artist">Исполнитель <span class="field-hint">(Genius)</span></label>
+                <input id="tr-artist" type="text" autocomplete="off" placeholder="Необязательно" />
+              </div>
+              <div class="field">
+                <label for="tr-title">Название <span class="field-hint">(Genius)</span></label>
+                <input id="tr-title" type="text" autocomplete="off" placeholder="Необязательно" />
+              </div>
+            </div>
+
+            <div class="progress-wrap">
+              <div class="progress is-hidden" id="tr-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="progress__bar" id="tr-progressBar"></div>
+              </div>
+              <p id="tr-phase" class="phase is-hidden" aria-live="polite"></p>
+              <button type="button" id="tr-cancel" class="btn btn--sm btn--ghost progress-cancel is-hidden">Отменить</button>
+            </div>
+
+            <div class="actions">
+              <button id="tr-submit" type="submit" class="btn btn--primary">Распознать текст</button>
+              <button id="tr-reset" type="button" class="btn btn--ghost">Сбросить</button>
+            </div>
+          </form>
+
+          <div id="tr-result" class="result-card is-hidden" aria-live="polite"></div>
+          <div id="tr-status" class="status is-hidden" role="status" aria-live="polite"></div>
         </section>
       </div>
     </main>

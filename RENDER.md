@@ -39,8 +39,16 @@
 | `MAX_UPLOAD_MB` | 100 | 512+ |
 | `FFMPEG_TIMEOUT_SEC` | 1800 | 3600 |
 | `MAX_IMAGE_BATCH` | 10 | 20 |
+| `TRANSCRIBE_TIER` | `degraded` | `full` |
+| `WHISPER_MODEL` | `base` | `large-v3` |
+| `MAX_TRANSCRIBE_SEC` | 180 | 3600 |
+| `GENIUS_API_TOKEN` | — | опционально |
 
 `PORT` задаёт Render автоматически.
+
+### Транскрипция на Free
+
+Вкладка **«Текст»** работает в **degraded** режиме: модель `base`, до **3 минут** аудио, без Demucs (отделения вокала). Качество песен ниже, чем локально с `TRANSCRIBE_TIER=full`. Для демо и коротких записей достаточно; тяжёлые модели на 512 MB RAM не поместятся.
 
 ## Проверка
 
